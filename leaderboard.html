@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Leaderboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #020617, #0f172a);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .board {
+    width: 100%;
+    max-width: 420px;
+    background: #020617;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    animation: pop 0.4s ease;
+  }
+
+  @keyframes pop {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0f172a;
+    padding: 12px 16px;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    animation: slide 0.3s ease;
+  }
+
+  @keyframes slide {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .rank {
+    font-weight: 700;
+    width: 32px;
+  }
+
+  .name {
+    flex: 1;
+    margin-left: 8px;
+  }
+
+  .score {
+    font-weight: 700;
+  }
+
+  .top1 { background: linear-gradient(135deg, #facc15, #f59e0b); color:#000; }
+  .top2 { background: linear-gradient(135deg, #e5e7eb, #9ca3af); color:#000; }
+  .top3 { background: linear-gradient(135deg, #fb923c, #ea580c); color:#000; }
+
+  .note {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+
+  /* Simple Confetti */
+  .confetti {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: red;
+    animation: fall 2s linear infinite;
+  }
+
+  @keyframes fall {
+    from { transform: translateY(-100vh) rotate(0); }
+    to { transform: translateY(100vh) rotate(360deg); }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="board">
+  <h1>🏆 Leaderboard</h1>
+  <div id="list"></div>
+  <div class="note">Updates live</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const quizId = getSession("quizId");
+const list = document.getElementById("list");
+let played = false;
+
+// Unlock audio
+document.addEventListener("click",()=>Sound.play("click"),{once:true});
+
+function loadLeaderboard(){
+  if(!played){
+    Sound.stopAll();
+    Sound.play("leaderboard");
+    played = true;
+  }
+
+  api("leaderboard",{quizId}).then(d=>{
+    list.innerHTML="";
+    d.leaderboard.forEach((p,i)=>{
+      const row=document.createElement("div");
+      row.className="row";
+      if(i===0) row.classList.add("top1");
+      if(i===1) row.classList.add("top2");
+      if(i===2) row.classList.add("top3");
+
+      row.innerHTML=`
+        <div class="rank">${i+1}</div>
+        <div class="name">${p.name}</div>
+        <div class="score">${p.score}</div>`;
+      list.appendChild(row);
+    });
+  });
+}
+
+loadLeaderboard();
+
+  function launchConfetti() {
+    for (let i = 0; i < 15; i++) {
+      const c = document.createElement("div");
+      c.className = "confetti";
+      c.style.left = Math.random() * 100 + "vw";
+      c.style.background = ["#22c55e","#3b82f6","#facc15","#ef4444"][i%4];
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 2000);
+    }
+  }
+
+  setInterval(loadLeaderboard, 2000);
+  loadLeaderboard();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Join Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #7c3aed, #2563eb);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    background: #fff;
+    width: 100%;
+    max-width: 360px;
+    padding: 30px;
+    border-radius: 18px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    text-align: center;
+    animation: pop 0.4s ease;
+  }
+  @keyframes pop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  h1 {
+    margin: 0 0 10px;
+    font-size: 26px;
+    color: #111827;
+  }
+  p {
+    margin-bottom: 20px;
+    color: #6b7280;
+    font-size: 14px;
+  }
+  input {
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    font-size: 16px;
+    outline: none;
+  }
+  input:focus {
+    border-color: #6366f1;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: #22c55e;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  button:hover {
+    transform: scale(1.03);
+  }
+  .error {
+    margin-top: 12px;
+    color: #ef4444;
+    font-size: 14px;
+    min-height: 18px;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h1>Join Quiz</h1>
+  <p>Enter the Game PIN to play</p>
+
+  <input id="pin" placeholder="Game PIN" maxlength="6">
+  <input id="name" placeholder="Your Name">
+
+  <button onclick="join()">JOIN</button>
+
+  <div class="error" id="error"></div>
+</div>
+
+<!-- COMMON APP CONFIG -->
+<script src="app.js"></script>
+
+<script>
+  function join() {
+    const pin = document.getElementById("pin").value.trim();
+    const name = document.getElementById("name").value.trim();
+    const error = document.getElementById("error");
+
+    error.textContent = "";
+
+    if (!pin || !name) {
+      error.textContent = "Enter PIN and Name";
+      return;
+    }
+
+    api("joinQuiz", {
+      quizId: pin,
+      name: name
+    })
+    .then(d => {
+      if (d.error) {
+        error.textContent = d.error;
+      } else {
+        setSession("quizId", pin);
+        setSession("playerName", name);
+        location.href = "player.html";
+      }
+    })
+    .catch(() => {
+      error.textContent = "Server not reachable";
+    });
+  }
+</script>
+
+</body>
+</html>

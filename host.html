@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Host Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    min-height: 100vh;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .panel {
+    background: #020617;
+    width: 100%;
+    max-width: 420px;
+    padding: 28px;
+    border-radius: 18px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    animation: pop 0.4s ease;
+  }
+  @keyframes pop {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  input {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    margin-bottom: 12px;
+    font-size: 16px;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: 0.2s;
+  }
+  button:hover {
+    transform: scale(1.03);
+  }
+  .create { background: #22c55e; }
+  .start  { background: #3b82f6; }
+  .end    { background: #ef4444; }
+
+  .pin-box {
+    margin: 18px 0;
+    padding: 16px;
+    background: #020617;
+    border: 2px dashed #334155;
+    text-align: center;
+    border-radius: 14px;
+  }
+  .pin {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    margin-top: 6px;
+    color: #22c55e;
+  }
+  .status {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #94a3b8;
+    min-height: 18px;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="panel">
+  <h1>Host Dashboard</h1>
+
+  <input id="title" placeholder="Quiz Title">
+
+  <button onclick="createQuiz()" style="background: #3b82f6;">Create Quiz</button>
+  <button onclick="goStart()" style="background: #22c55e;">Start Quiz</button>
+  <button onclick="goReport()" style="background:#facc15;">Download Report</button>
+
+  <div class="status" id="status"></div>
+</div>
+
+<!-- COMMON BACKEND CONFIG -->
+<script src="app.js"></script>
+
+<script>
+
+  let quizId = null;
+  const status = document.getElementById("status");
+
+  function createQuiz(){
+  const title = document.getElementById("title").value.trim();
+  if(!title){
+    status.textContent = "Enter quiz title";
+    return;
+  }
+
+  api("createQuiz",{title}).then(d=>{
+    setSession("quizId", d.quizId);
+    location.href="question-builder.html";
+  });
+}
+
+function goStart(){
+  location.href="start-quiz.html";
+}
+
+function goReport(){
+  location.href = "report.html";
+}
+</script>
+
+</body>
+</html>

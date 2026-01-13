@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Enter Game PIN</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#46178f;
+  font-family:Poppins,sans-serif;
+}
+.card{
+  background:#fff;
+  padding:30px;
+  border-radius:12px;
+  text-align:center;
+  width:320px;
+}
+input{
+  width:90%;
+  padding:16px;
+  font-size:20px;
+  text-align:center;
+  margin-bottom:16px;
+}
+button{
+  width:100%;
+  padding:14px;
+  font-size:18px;
+  background:#333;
+  color:#fff;
+  border:none;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <input id="pin" placeholder="Game PIN" maxlength="6">
+
+  <button onclick="beginWaiting()">Start Waiting</button>
+  <button onclick="goLive()" style="margin-top:10px;background:#22c55e">
+    Go Live
+  </button>
+
+  <p id="joinCount" style="
+    margin-top:14px;
+    font-size:16px;
+    font-weight:600;
+  ">
+    0 joined
+  </p>
+</div>
+
+<script src="app.js"></script>
+<script>
+let quizId = null;
+let poller = null;
+
+function pollJoinCount(){
+  if(!quizId) return;
+
+  api("getJoinCount",{quizId}).then(d=>{
+    joinCount.textContent = d.count + " joined";
+  });
+}
+
+/* PHASE 1 – WAITING ROOM */
+function beginWaiting(){
+  quizId = pin.value.trim();
+  if(!quizId) return;
+
+  setSession("quizId", quizId);
+
+  pollJoinCount();
+  if(!poller){
+    poller = setInterval(pollJoinCount, 1000);
+  }
+}
+
+/* PHASE 2 – GO LIVE */
+function goLive(){
+  if(!quizId) return alert("Enter PIN first");
+
+  api("startExistingQuiz",{quizId}).then(()=>{
+    clearInterval(poller);
+    location.href = "host-view.html";
+  });
+}
+</script>
+
+
+</body>
+</html>

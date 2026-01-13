@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; }
+
+body{
+  margin:0;
+  background:#0f172a;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:Poppins,sans-serif;
+}
+
+.container{
+  width:100%;
+  max-width:420px;
+  padding:20px;
+}
+
+.options{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.option{
+  height:90px;
+  border-radius:18px;
+  border:none;
+  cursor:pointer;
+}
+
+.A{background:#ef4444}
+.B{background:#3b82f6}
+.C{background:#22c55e}
+.D{background:#f59e0b}
+
+.option:disabled{
+  opacity:0.6;
+  cursor:default;
+}
+
+#timer{
+  margin-top:18px;
+  text-align:center;
+  font-size:16px;
+  color:#22c55e;
+}
+
+#result{
+  margin-top:18px;
+  text-align:center;
+  font-size:22px;
+  font-weight:700;
+}
+
+#midLeaderboard{
+  margin-top:20px;
+  display:none;
+}
+
+.exit-btn{
+  display: block;
+  margin: 20px auto 0;
+  width: 50%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: #ef4444;
+  color: #fff;
+}
+
+.exit-btn:hover{
+  background: #dc2626;
+}
+
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- OPTIONS ONLY -->
+  <div class="options" id="options">
+    <button class="option A" onclick="answer('A')"></button>
+    <button class="option B" onclick="answer('B')"></button>
+    <button class="option C" onclick="answer('C')"></button>
+    <button class="option D" onclick="answer('D')"></button>
+  </div>
+
+  <div id="timer"></div>
+  <div id="result"></div>
+  <div id="midLeaderboard"></div>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+  
+const quizId = getSession("quizId");
+const name   = getSession("playerName");
+
+let currentQ = null;
+let answered = false;
+let resultShownForQ = null;
+let lastAnswerCorrect = null;
+let lastAnswerPoints = 0;
+let leaderboardShownForQ = null;
+let finalShown = false;
+let quizEnded = false;
+let poller = null;
+
+
+/* 🔄 MAIN POLL */
+function load(){
+  api("getQuestion",{quizId}).then(d=>{
+    if (quizEnded) return;
+
+    /* 🏁 QUIZ END */
+    if(d.done){
+      if(!quizEnded){
+        quizEnded = true;
+        clearInterval(poller);
+        showFinalLeaderboard();
+      }
+      return;
+    }
+
+    /* ⏱ REVEAL PHASE → SHOW TIMER ONLY */
+    if(d.phase === "reveal"){
+  disableOptions();
+  timer.textContent = `⏱ Revealing answer ${d.timeLeft}s`;
+
+  // ✅ SHOW RESULT DURING REVEAL (ONCE)
+  if(resultShownForQ !== d.qNo){
+    resultShownForQ = d.qNo;
+
+    if (!answered) {
+    result.textContent = "You didn’t answer";
+    result.style.color = "#facc15"; // yellow
+    lastAnswerCorrect = null;
+    lastAnswerPoints = 0;
+    return;
+  }
+    if(lastAnswerCorrect){
+      result.textContent = `🎉 Correct +${lastAnswerPoints}`;
+      result.style.color = "#22c55e";
+    } else {
+      result.textContent = "❌ Wrong";
+      result.style.color = "#ef4444";
+    }
+  }
+  return;
+}
+
+    /* 🏆 LEADERBOARD PHASE → SHOW RESULT + TOP 10 */
+    if(d.phase === "leaderboard"){
+  if(leaderboardShownForQ !== d.qNo){
+    leaderboardShownForQ = d.qNo;
+    showPlayerLeaderboard();
+  }
+  return;
+}
+
+    /* ❓ NEW QUESTION */
+    if(currentQ !== d.qNo){
+      currentQ = d.qNo;
+      answered = false;
+      resultShownForQ = null;
+      leaderboardShownForQ = null;
+
+      resetUI();
+      enableOptions();
+    }
+
+    timer.textContent = `Time left: ${d.timeLeft}s`;
+  });
+}
+
+/* 🎯 ANSWER */
+function answer(opt){
+  if(answered) return;
+  answered = true;
+  disableOptions();
+
+  api("submitAnswer",{
+    quizId,
+    qNo: currentQ,
+    name,
+    answer: opt
+  }).then(r=>{
+    // ✅ STORE RESULT LOCALLY
+    lastAnswerCorrect = r.correct;
+    lastAnswerPoints  = r.points || 0;
+  });
+}
+
+
+/* 🏆 TOP 10 */
+function showPlayerLeaderboard(){
+  const lb = document.getElementById("midLeaderboard");
+  lb.style.display = "block";
+  lb.innerHTML = "<h3 style='text-align:center;color:#fff'>🏆 Top 10</h3>";
+
+  api("leaderboard",{quizId}).then(d=>{
+    d.leaderboard.slice(0,10).forEach((p,i)=>{
+      lb.innerHTML += `
+        <div style="
+          display:flex;justify-content:space-between;
+          padding:10px;background:#020617;
+          margin-bottom:6px;border-radius:10px;color:#fff">
+          <span>${i+1}. ${p.name}</span>
+          <span>${p.score}</span>
+        </div>`;
+    });
+  });
+}
+
+/* 🏁 FINAL TOP 3 */
+function showFinalLeaderboard(){
+  options.style.display="none";
+  timer.textContent="";
+  result.textContent="🏁 Quiz Finished";
+  result.style.color="#fff";
+
+  const lb = document.getElementById("midLeaderboard");
+  lb.style.display="block";
+  lb.innerHTML = `
+    <h3 style="text-align:center;color:#fff">🏆 Top 3</h3>
+    <div id="finalList"></div>
+    <button class="exit-btn" onclick="exitPlayer()">Exit Quiz</button>
+  `;
+
+  api("leaderboard",{quizId}).then(d=>{
+    const list = document.getElementById("finalList");
+    d.leaderboard.slice(0,3).forEach((p,i)=>{
+      list.innerHTML += `
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          padding:12px;
+          background:#020617;
+          margin-bottom:8px;
+          border-radius:10px;
+          font-size:18px;
+          font-weight:700;
+          color:#fff">
+          <span>${["🥇","🥈","🥉"][i]} ${p.name}</span>
+          <span>${p.score}</span>
+        </div>`;
+    });
+  });
+}
+
+function exitPlayer(){
+  location.href = "join.html";
+}
+
+/* 🔧 HELPERS */
+function disableOptions(){
+  document.querySelectorAll(".option").forEach(b=>b.disabled=true);
+}
+function enableOptions(){
+  document.querySelectorAll(".option").forEach(b=>b.disabled=false);
+}
+function resetUI(){
+  options.style.display="grid";
+  result.textContent="";
+  timer.textContent="";
+  midLeaderboard.style.display="none";
+}
+
+poller = setInterval(load, 1000);
+
+</script>
+
+</body>
+</html>

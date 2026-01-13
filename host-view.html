@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quiz Live View</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  font-family:Poppins,sans-serif;
+  background:#f5f5f5;
+}
+
+/* TOP BAR */
+.top{
+  background:#fff;
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+/* 🔥 BIG CENTER QUESTION */
+.qtext{
+  flex:1;
+  text-align:center;
+  font-size:32px;          /* ⬆ bigger */
+  font-weight:700;
+}
+
+/* TIMER */
+.timer{
+  width:64px;height:64px;
+  border-radius:50%;
+  background:#ff914d;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  font-weight:700;
+}
+
+/* IMAGE */
+#imgBox{
+  display:none;
+  padding:12px;
+  text-align:center;
+}
+
+/* OPTIONS */
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  padding:12px;
+}
+.opt{
+  color:#fff;
+  font-size:20px;
+  padding:32px;
+  border-radius:14px;
+  text-align:center;
+  font-weight:700;
+}
+.A{background:#ef4444}
+.B{background:#3b82f6}
+.C{background:#22c55e}
+.D{background:#f59e0b}
+
+.correct{outline:6px solid #16a34a}
+.wrong{opacity:0.35}
+
+/* BOTTOM */
+.bottom{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+}
+
+button{
+  padding:12px 18px;
+  font-size:16px;
+  font-weight:700;
+  border:none;
+  border-radius:10px;
+  background:#6366f1;
+  color:#fff;
+  cursor:pointer;
+}
+
+/* 🏆 LEADERBOARD */
+#leaderboard{
+  display:none;
+  padding:20px;
+}
+.lb-item{
+  background:#fff;
+  margin-bottom:10px;
+  padding:14px;
+  border-radius:10px;
+  font-size:18px;
+  font-weight:600;
+  display:flex;
+  justify-content:space-between;
+}
+
+.exit-btn{
+  display: block;
+  margin: 20px auto 0;
+  width: 25%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: #ef4444;
+  color: #fff;
+}
+
+.exit-btn:hover{
+  background: #dc2626;
+}
+
+
+</style>
+
+</head>
+
+<body>
+
+<div class="top">
+  <div class="qtext" id="q">Waiting...</div>
+  <div class="timer" id="t">--</div>
+</div>
+
+<div id="imgBox" style="
+  display:none;
+  padding:12px;
+  text-align:center;
+">
+  <img id="qImg" style="
+    max-width:90%;
+    max-height:280px;
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.2);
+  ">
+</div>
+
+<div class="grid">
+  <div class="opt A" id="A"></div>
+  <div class="opt B" id="B"></div>
+  <div class="opt C" id="C"></div>
+  <div class="opt D" id="D"></div>
+</div>
+
+<div id="leaderboard"></div>
+
+<div class="bottom">
+  <div id="answerCount" style="
+  font-size:16px;
+  font-weight:600;
+">
+  0 answered
+</div>
+
+  <button onclick="manualNext()">Next</button>
+</div>
+
+<script src="app.js"></script>
+<script>
+const quizId = getSession("quizId");
+
+let currentQ = null;
+let tickPlayed = new Set();
+let revealPlayed = false;
+let leaderboardPlayed = false;
+let victoryPlayed = false;
+let quizEnded = false;
+let poller = null;
+let leaderboardShownForQ = null;
+
+
+// Unlock audio
+document.addEventListener("click",()=>Sound.play("click"),{once:true});
+
+function load(){
+  api("getQuestion",{quizId}).then(d=>{
+    if (victoryPlayed) return;
+
+    /* 🏁 QUIZ END */
+    if(d.done){
+      if(!victoryPlayed){
+        victoryPlayed = true;
+        clearInterval(poller);
+        Sound.stopAll();
+        Sound.play("victory");
+        showFinalLeaderboard();
+      }
+      return;
+    }
+    /* 🔔 REVEAL */
+    if(d.phase === "reveal"){
+      if(!revealPlayed){
+        Sound.stop("bg");
+        Sound.play("reveal");
+        revealPlayed = true;
+      }
+      showQuestionUI();
+      highlight(d.revealAnswer);
+      t.textContent = d.timeLeft + "s";
+      return;
+    }
+
+    /* 🏆 MID LEADERBOARD */
+    if (d.phase === "leaderboard") {
+
+  if (leaderboardShownForQ !== d.qNo) {
+    leaderboardShownForQ = d.qNo;
+
+    Sound.stopAll();
+    Sound.play("leaderboard");
+
+    showMidLeaderboard();
+  }
+
+  return;
+}
+
+
+    /* ❓ NEW QUESTION */
+    if(currentQ !== d.qNo){
+      currentQ = d.qNo;
+      revealPlayed = false;
+      leaderboardPlayed = false;
+      leaderboardShownForQ = null; 
+      tickPlayed.clear();
+
+      Sound.stopAll();
+      Sound.play("bg", true);
+
+      showQuestionUI();
+      q.textContent = d.hostQuestion;
+      t.textContent = d.timeLeft + "s";
+      showImage(d.image);
+
+      ["A","B","C","D"].forEach((k,i)=>{
+        const el=document.getElementById(k);
+        el.textContent=d.options[i];
+        el.className="opt "+k;
+      });
+    }
+
+    /* ⏱ LAST 5 SECONDS */
+    if(d.timeLeft <= 5 && d.timeLeft > 0 && !tickPlayed.has(d.timeLeft)){
+      Sound.play("tick");
+      tickPlayed.add(d.timeLeft);
+    }
+
+    t.textContent = d.timeLeft + "s";
+  });
+}
+
+
+/* ---------- UI HELPERS ---------- */
+
+function showQuestionUI(){
+  document.querySelector(".top").style.display = "flex";
+  document.querySelector(".grid").style.display = "grid";
+  document.querySelector(".bottom").style.display = "flex";
+  document.getElementById("leaderboard").style.display = "none";
+}
+
+function highlight(correct){
+  ["A","B","C","D"].forEach(k=>{
+    const el = document.getElementById(k);
+    el.classList.remove("correct","wrong");
+    el.classList.add(k === correct ? "correct" : "wrong");
+  });
+}
+
+function showImage(url){
+  const box = document.getElementById("imgBox");
+  const img = document.getElementById("qImg");
+
+  if (url && url.trim() !== "") {
+    img.src = url;
+    box.style.display = "block";
+  } else {
+    img.src = "";
+    box.style.display = "none";
+  }
+}
+
+/* ---------- MID LEADERBOARD ---------- */
+
+function showMidLeaderboard(){
+  //if (showingLB) return;
+  //showingLB = true;
+  Sound.stopAll();
+Sound.play("leaderboard");
+
+  phase = "leaderboard";
+  document.getElementById("imgBox").style.display = "none";
+
+  document.querySelector(".grid").style.display = "none";
+  const lb = document.getElementById("leaderboard");
+  lb.style.display = "block";
+  lb.innerHTML = "<h2>🏆 Top 10</h2>";
+
+  api("leaderboard",{quizId}).then(d=>{
+    d.leaderboard.slice(0,10).forEach((p,i)=>{
+      lb.innerHTML += `
+        <div class="lb-item">
+          <span>${i+1}. ${p.name}</span>
+          <span>${p.score}</span>
+        </div>`;
+    });
+  });
+
+}
+
+/* ---------- MANUAL NEXT ---------- */
+
+function manualNext(){
+  Sound.play("click");
+  api("nextQuestion",{quizId});
+}
+
+/* ---------- FINAL LEADERBOARD ---------- */
+
+function showFinalLeaderboard(){
+  Sound.stopAll();
+  Sound.play("victory");
+
+  document.querySelector(".top").style.display="none";
+  document.querySelector(".grid").style.display="none";
+  document.querySelector(".bottom").style.display="none";
+  document.getElementById("imgBox").style.display="none";
+
+  const lb = document.getElementById("leaderboard");
+  lb.style.display="block";
+  lb.innerHTML = `
+    <h2>🏆 Final Leaderboard</h2>
+    <div id="finalList"></div>
+    <button class="exit-btn" onclick="exitHost()">Exit Quiz</button>
+  `;
+
+  api("leaderboard",{quizId}).then(d=>{
+    const list = document.getElementById("finalList");
+    d.leaderboard.slice(0,3).forEach((p,i)=>{
+      list.innerHTML += `
+        <div class="lb-item">
+          <span>${["🥇","🥈","🥉"][i]} ${p.name}</span>
+          <span>${p.score}</span>
+        </div>`;
+    });
+  });
+}
+
+function exitHost(){
+  Sound.play("click");
+  location.href = "host.html";
+}
+
+
+/* ---------- POLLING ---------- */
+
+poller = setInterval(load, 1000);
+
+setInterval(()=>{
+  api("getAnswerCount",{quizId})
+    .then(d=>answerCount.textContent = d.count + " answered");
+},1000);
+</script>
+
+
+</body>
+</html>

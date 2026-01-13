@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #7c3aed, #2563eb);
+  }
+
+  .card {
+    background: #fff;
+    width: 100%;
+    max-width: 420px;
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    animation: pop 0.4s ease;
+  }
+
+  @keyframes pop {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  h1 {
+    margin-bottom: 10px;
+    font-size: 30px;
+    color: #111827;
+  }
+
+  p {
+    color: #6b7280;
+    margin-bottom: 25px;
+    font-size: 15px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 15px;
+    transition: 0.2s;
+  }
+
+  .btn:hover {
+    transform: scale(1.03);
+  }
+
+  .host {
+    background: #22c55e;
+    color: #fff;
+  }
+
+  .player {
+    background: #3b82f6;
+    color: #fff;
+  }
+
+  .footer {
+    margin-top: 15px;
+    font-size: 13px;
+    color: #9ca3af;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h1>Live Quiz</h1>
+  <p>Select how you want to continue</p>
+
+  <button class="btn host" onclick="location.href='host.html'">
+    Host Quiz
+  </button>
+
+  <button class="btn player" onclick="location.href='join.html'">
+    Join Quiz
+  </button>
+
+  <div class="footer">
+    Powered by Google Sheets
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quiz Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Poppins,sans-serif;
+  background:#0f172a;
+  color:#fff;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.panel{
+  background:#020617;
+  width:100%;
+  max-width:480px;
+  padding:28px;
+  border-radius:16px;
+  text-align:center;
+}
+input{
+  width:93%;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  font-size:16px;
+  margin-bottom:12px;
+}
+button{
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border:none;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+.generate{background:#3b82f6;color:#fff}
+.download{background:#22c55e;color:#fff}
+.exit{background:#ef4444;color:#fff}
+.status{
+  margin-top:10px;
+  font-size:14px;
+  color:#94a3b8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="panel">
+  <h2>Quiz Report</h2>
+
+  <input id="quizId" placeholder="Enter Quiz ID" required>
+
+  <button class="generate" onclick="loadReport()">Generate Report</button>
+  <button class="download" onclick="downloadPDF()" disabled id="downloadBtn">
+    Download PDF
+  </button>
+
+  <div class="status" id="status"></div>
+
+  <button class="exit" onclick="goBack()">Exit</button>
+</div>
+
+<script src="app.js"></script>
+<script>
+let reportData = null;
+const status = document.getElementById("status");
+
+function loadReport(){
+  const quizId = document.getElementById("quizId").value.trim();
+  if(!quizId){
+    status.textContent = "Enter Quiz ID";
+    return;
+  }
+
+  status.textContent = "Fetching report...";
+  api("getReport",{quizId}).then(d=>{
+    if(!d.players || d.players.length === 0){
+      status.textContent = "Invalid Quiz ID or no data";
+      return;
+    }
+    reportData = d;
+    status.textContent = `Report ready for "${d.title}"`;
+    document.getElementById("downloadBtn").disabled = false;
+  });
+}
+
+function downloadPDF(){
+  if(!reportData) return;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  /* HEADER */
+  doc.setFontSize(12);
+  doc.text(`Quiz Title: ${reportData.title}`, 14, 15);           
+  doc.setFontSize(12);
+  doc.text(`Quiz ID: ${reportData.quizId}`, 160, 15); 
+
+  const rows = reportData.players.map((p,i)=>[
+    i+1,
+    p.name,
+    p.score
+  ]);
+
+  doc.autoTable({
+    startY: 25,
+    head: [["S.No","Name","Score"]],
+    body: rows,
+    theme: "grid",
+    styles: { halign: "center" },
+    headStyles: { fillColor: [34,197,94] }
+  });
+
+  doc.save(`quiz_${reportData.quizId}_report.pdf`);
+}
+
+function goBack(){
+  location.href = "host.html";
+}
+</script>
+
+</body>
+</html>

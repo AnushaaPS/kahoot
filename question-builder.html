@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Question Builder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  font-family:Poppins,sans-serif;
+  background:#f2f2f2;
+}
+.wrapper{
+  display:grid;
+  grid-template-columns:260px 1fr 280px;
+  height:100vh;
+}
+
+/* LEFT SIDEBAR */
+.sidebar{
+  background:#fff;
+  padding:16px;
+  border-right:1px solid #ddd;
+}
+.sidebar h3{
+  margin-bottom:12px;
+}
+.qitem{
+  background:#eee;
+  padding:10px;
+  border-radius:8px;
+  margin-bottom:8px;
+  font-size:14px;
+}
+
+/* CENTER EDITOR */
+.editor{
+  padding:20px;
+}
+.question{
+  font-size:26px;
+  font-weight:700;
+  width:95%;
+  padding:14px;
+  margin-bottom:16px;
+}
+.image-box{
+  background:#ddd;
+  height:240px;
+  border-radius:10px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-bottom:16px;
+}
+.image-box img{
+  max-height:100%;
+  border-radius:8px;
+}
+.options{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.opt{
+  padding:18px;
+  color:#ffffff;
+  font-weight:700;
+  border-radius:10px;
+}
+.opt input{
+  width:100%;
+  border:none;
+  background:transparent;
+  color:#ffffff;
+  font-size:16px;
+  outline:none;
+}
+.A{background:#ef4444}
+.B{background:#3b82f6}
+.C{background:#22c55e}
+.D{background:#f59e0b}
+
+/* RIGHT SETTINGS */
+.settings{
+  background:#fff;
+  padding:16px;
+  border-left:1px solid #ddd;
+}
+.settings label{
+  font-size:14px;
+  font-weight:600;
+}
+.settings select, .settings input{
+  width:100%;
+  padding:10px;
+  margin-bottom:14px;
+}
+button{
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  font-weight:700;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+}
+.add{background:#3b82f6;color:#fff;margin-bottom:10px}
+.finish{background:#22c55e;color:#fff}
+</style>
+</head>
+
+<body>
+
+    <!-- TOP BAR -->
+<div style="
+  background:#46178f;
+  color:#fff;
+  padding:14px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+">
+  <div style="font-size:18px;font-weight:700;">
+    Make Students Mad!!!
+  </div>
+
+  <div style="
+    background:#fff;
+    color:#000;
+    padding:8px 16px;
+    border-radius:8px;
+    font-size:20px;
+    font-weight:700;
+    letter-spacing:2px;
+  ">
+    PIN: <span id="pinText">----</span>
+  </div>
+</div>
+
+<div class="wrapper">
+
+  <!-- LEFT -->
+  <div class="sidebar">
+    <h3>Questions</h3>
+    <div id="qlist"></div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="editor">
+    <input id="q" class="question" placeholder="Type your question here">
+
+    <div class="image-box">
+      <img id="preview" style="display:none">
+      <span id="imgText">Image Preview</span>
+    </div>
+
+    <div class="options">
+      <div class="opt A"><input id="A" placeholder="Option A"></div>
+      <div class="opt B"><input id="B" placeholder="Option B"></div>
+      <div class="opt C"><input id="C" placeholder="Option C"></div>
+      <div class="opt D"><input id="D" placeholder="Option D"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="settings">
+    <label>Correct Answer</label>
+    <select id="correct">
+      <option>A</option>
+      <option>B</option>
+      <option>C</option>
+      <option>D</option>
+    </select>
+
+    <label>Time limit (seconds)</label>
+    <select id="time">
+      <option value="5">5</option>
+      <option value="10">10</option>
+      <option value="20">20</option>
+      <option value="30" selected>30</option>
+      <option value="60">60</option>
+    </select>
+
+    <label>Points</label>
+    <select id="points">
+      <option value="50">50</option>
+      <option value="100" selected>100</option>
+      <option value="200">200</option>
+    </select>
+
+    <label>Image URL (optional)</label>
+    <input id="image" placeholder="https://...">
+
+    <button class="add" onclick="add()">Add Question</button>
+    <button class="finish" onclick="finish()">Finish & Go Live</button>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+
+let qNo = 1;
+const quizId = getSession("quizId");
+document.getElementById("pinText").textContent = quizId || "----";
+
+image.oninput = ()=>{
+  if(image.value){
+    preview.src=image.value;
+    preview.style.display="block";
+    imgText.style.display="none";
+  }
+};
+
+function add(){
+  api("addQuestion",{
+    quizId,
+    qNo,
+    question:q.value,
+    A:A.value,B:B.value,C:C.value,D:D.value,
+    correct:correct.value,
+    time:time.value,
+    points:points.value,
+    image:image.value
+  }).then(()=>{
+    const div=document.createElement("div");
+    div.className="qitem";
+    div.textContent=`Q${qNo}: ${q.value.slice(0,30)}...`;
+    qlist.appendChild(div);
+
+    qNo++;
+    q.value=A.value=B.value=C.value=D.value=image.value="";
+    preview.style.display="none";
+    imgText.style.display="block";
+  });
+}
+
+function finish(){
+  location.href="start-quiz.html";
+}
+</script>
+
+</body>
+</html>
